@@ -1,0 +1,33 @@
+MODULE main
+--変数
+VAR
+	a : {0,1,2};
+	b : {0,1,2};
+	
+--状態遷移
+ASSIGN
+
+	init(a) := 0;
+	init(b) := 0;
+
+	next(a):=case
+		b = 1 : a;
+		a = 0: 1;
+		a = 1: 2;
+		a = 2: 0;
+		TRUE: a;
+		esac;
+
+	next(b):=case
+		b = a : b;
+		b = 0: 1;
+		b = 1: 2;
+		b = 2: 0;
+		TRUE: b;
+		esac;
+--検査式
+LTLSPEC F b = 2
+LTLSPEC F (b = a & b = 2)
+
+
+

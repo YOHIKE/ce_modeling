@@ -1,0 +1,17 @@
+MODULE main
+
+VAR
+
+    next_state : 2..2;
+    a : {0,1,2};
+    b : {0,1,2};
+    switch : {on,off};
+ASSIGN
+
+    init(next_state) := 2;
+
+    next(next_state) := case
+        TRUE : next_state;
+        esac;
+
+SPECEG (a = 1 & switch = off)

@@ -1,0 +1,689 @@
+MODULE Vehicle(no,ps,di,ki)
+VAR
+
+	Self:{Stopped,Ready};
+	breaking:boolean;
+	driving:boolean;
+	V2V_PS:boolean;
+	V2D_PS:boolean;
+	priority:boolean;
+	Control_P_For_VSA:{Stopped,Ready,Controlled};
+	Monitor_P_For_CDV:{Stopped,Ready,Monitored};
+	Monitor_A_For_TFL:{Stopped,Ready,Monitoring};
+
+	CarPos:{0,1,2,3,4,5,6,11,12,13,14,15,16,99};
+	InitPos:{0,1,2,3,4,5,6,11,12,13,14,15,16,99};
+	CarNumber:0..5;
+	CarDi: {L2R,R2L,U2D,D2U,NOTHING};
+	Kind:{Emergency,Normal,Auto};
+	BB:unsigned word[5];
+
+
+ASSIGN
+
+	init(Self):=Ready;
+	init(Control_P_For_VSA):=Ready;
+	init(Monitor_P_For_CDV):=Ready;
+	init(Monitor_A_For_TFL):=Ready;
+	init(breaking):=FALSE;
+	init(driving):=TRUE;
+	init(V2V_PS):=FALSE;
+	init(V2D_PS):=FALSE;
+	init(CarNumber):=no;
+	init(CarPos):=ps;
+	init(InitPos):=ps;
+	init(CarDi):=di;
+	init(Kind):=ki;
+	init(priority):=case
+		Kind=Emergency:TRUE;
+		TRUE:FALSE;
+	esac;
+
+	next(CarNumber):=CarNumber; 
+	next(Kind):=Kind; 
+	next(priority):=priority; 
+	next(InitPos):=InitPos; 
+
+JUSTICE running
+
+MODULE TrafficLight(sign,hv)
+
+VAR
+	green: boolean; 
+	HorV: {HH,VV};  
+	emergencyCar:boolean;
+	noOfCars:0..10;
+
+	Self:{Stopped,Ready};
+	Control_P_For_STLCA:{Stopped,Ready,Controlled};
+	Control_P_For_ETLCA:{Stopped,Ready,Controlled};
+	Monitor_P_For_V:{Stopped,Ready,Monitored};
+
+ASSIGN
+	init(Self):=Ready;
+	init(green):=sign;
+	init(HorV):=hv;
+	init(emergencyCar):=FALSE;
+	init(noOfCars):=0;
+	init(Control_P_For_STLCA):=Ready;
+	init(Control_P_For_ETLCA):=Ready;
+	init(Monitor_P_For_V):=Ready;
+
+JUSTICE running
+
+MODULE SmartTLCA()
+VAR
+	Cycle:0..2;
+	Self:{Stopped,Ready};
+	Control_A_For_TFL_V:{Stopped,Ready,Controlling};
+	Control_A_For_TFL_H:{Stopped,Ready,Controlling};
+	Transmit_Data_P_For_CDV:{Stopped,Ready,Success,Failure,Transmitted};
+
+ASSIGN
+	init(Cycle):=0;
+	init(Self):=Ready;
+	init(Control_A_For_TFL_V):=Ready;
+	init(Control_A_For_TFL_H):=Ready;
+	init(Transmit_Data_P_For_CDV):=Ready;
+
+
+JUSTICE running
+
+
+MODULE EmergencyTLCA()
+VAR
+	Self:{Stopped,Ready};
+	Control_A_For_TFL_V:{Stopped,Ready,Controlling};
+	Control_A_For_TFL_H:{Stopped,Ready,Controlling};
+	Transmit_Data_P_For_CDV:{Stopped,Ready,Success,Failure,Transmitted};
+	H_EmergencyCar: boolean;
+	V_EmergencyCar: boolean;
+
+ASSIGN
+	init(Self):=Ready;
+	init(Control_A_For_TFL_V):=Ready;
+	init(Control_A_For_TFL_H):=Ready;
+	init(H_EmergencyCar):=FALSE;
+	init(V_EmergencyCar):=FALSE;
+	init(Transmit_Data_P_For_CDV):=Ready;
+
+JUSTICE running
+
+MODULE VehicleSA() 
+
+VAR
+	Self:{Stopped,Ready};
+	Control_A_For_V1:{Stopped,Ready,Controlling};
+	Control_A_For_V2:{Stopped,Ready,Controlling};
+	Transmit_Data_P_For_CDV:{Stopped,Ready,Success,Failure,Transmitted};
+
+ASSIGN
+	init(Self):=Ready;
+	init(Control_A_For_V1):=Ready;
+	init(Control_A_For_V2):=Ready;
+	init(Transmit_Data_P_For_CDV):=Ready;
+
+JUSTICE running
+
+MODULE StreetSlot()
+
+DEFINE
+DEFINE d := [[0,16], [-1,2]];
+DEFINE DNxtL2R:=[4,2,3,0,5,6,6];
+DEFINE DNxtR2L:=[3,1,1,2,0,4,5];
+DEFINE DNxtU2D:=[14,12,13,0,15,16,16];
+DEFINE DNxtD2U:=[13,11,11,12,0,14,15];
+DEFINE Conjunction:=[Connecting,End,Normal,Normal,Normal,Normal,End];
+VAR
+
+	ConjunctionOrg: {Normal,End,Connecting};
+	Self:{Stopped,Ready};
+
+	Monitor_P_For_CDV:{Stopped,Ready,Monitored};
+
+ASSIGN
+	init(Self):=Ready;
+	init(Monitor_P_For_CDV):=Ready;
+	init(ConjunctionOrg):=Normal;
+                           
+JUSTICE running
+
+
+MODULE CommunicationDevice()
+
+VAR
+	Self:{Stopped,Ready};
+	Monitor_A_For_ENV:{Stopped,Ready,Monitoring};
+	Monitor_A_For_V1 :{Stopped,Ready,Monitoring};
+	Monitor_A_For_V2 :{Stopped,Ready,Monitoring};
+	Transmit_Data_A_For_STL:{Stopped,Ready,Success,Failure,Transmitting};
+	Transmit_Data_A_For_ETL:{Stopped,Ready,Success,Failure,Transmitting};
+	Transmit_Data_A_For_VSA:{Stopped,Ready,Success,Failure,Transmitting};
+ASSIGN
+	init(Self):=Ready;
+	init(Monitor_A_For_ENV):=Ready;
+	init(Monitor_A_For_V1):=Ready;
+	init(Monitor_A_For_V2):=Ready;
+	init(Transmit_Data_A_For_STL):=Ready;
+	init(Transmit_Data_A_For_ETL):=Ready;
+	init(Transmit_Data_A_For_VSA):=Ready;
+
+JUSTICE running
+
+
+
+MODULE main
+VAR
+
+	TFL_H:process TrafficLight(TRUE,HH);
+
+	TFL_V:process TrafficLight(FALSE,VV);
+
+	STL:process SmartTLCA();
+
+	ETL:process EmergencyTLCA();
+
+	VSA:process VehicleSA();
+
+	SS106:process StreetSlot();
+
+	V1:process Vehicle(1,1,L2R,Auto);
+	V2:process Vehicle(1,6,R2L,Auto);
+
+	CDV:process CommunicationDevice();
+
+ASSIGN
+
+	next(TFL_V.Self):=case
+
+		TRUE:TFL_V.Self;
+	esac;
+	next(TFL_H.Self):=case
+
+		TRUE:TFL_H.Self;
+	esac;
+
+	next(TFL_H.Control_P_For_STLCA):=case
+		TFL_H.Self=Stopped:Stopped;
+		TFL_H.Control_P_For_STLCA=Ready & STL.Control_A_For_TFL_H=Controlling:Controlled;
+		TFL_H.Control_P_For_STLCA=Controlled & STL.Control_A_For_TFL_H=Controlling:Ready;
+		TFL_H.Control_P_For_STLCA=Stopped & TFL_H.Self=Ready:Ready;
+		TRUE:TFL_H.Control_P_For_STLCA;
+	esac;
+	next(TFL_V.Control_P_For_STLCA):=case
+		TFL_V.Self=Stopped:Stopped;
+		TFL_V.Control_P_For_STLCA=Ready & STL.Control_A_For_TFL_V=Controlling:Controlled;
+		TFL_V.Control_P_For_STLCA=Controlled & STL.Control_A_For_TFL_V=Controlling:Ready;
+		TFL_V.Control_P_For_STLCA=Stopped & TFL_V.Self=Ready:Ready;
+		TRUE:TFL_V.Control_P_For_STLCA;
+	esac;
+
+	next(TFL_H.Control_P_For_ETLCA):=case
+		TFL_H.Self=Stopped:Stopped;
+		TFL_H.Control_P_For_ETLCA=Ready & STL.Control_A_For_TFL_H=Controlling:Controlled;
+		TFL_H.Control_P_For_ETLCA=Controlled & STL.Control_A_For_TFL_H=Controlling:Ready;
+		TFL_H.Control_P_For_ETLCA=Stopped & TFL_H.Self=Ready:Ready;
+		TRUE:TFL_H.Control_P_For_ETLCA;
+	esac;
+	next(TFL_V.Control_P_For_ETLCA):=case
+		TFL_V.Self=Stopped:Stopped;
+		TFL_V.Control_P_For_ETLCA=Ready & STL.Control_A_For_TFL_V=Controlling:Controlled;
+		TFL_V.Control_P_For_ETLCA=Controlled & STL.Control_A_For_TFL_V=Controlling:Ready;
+		TFL_V.Control_P_For_ETLCA=Stopped & TFL_V.Self=Ready:Ready;
+		TRUE:TFL_V.Control_P_For_ETLCA;
+	esac;
+
+        next(TFL_H.Monitor_P_For_V):=case
+		TFL_H.Monitor_P_For_V=Ready & V1.Monitor_A_For_TFL=Monitoring:Monitored;  
+		TFL_H.Monitor_P_For_V=Monitored & V1.Monitor_A_For_TFL!=Monitoring:Ready;
+		TRUE:TFL_H.Monitor_P_For_V;
+	esac;
+        next(TFL_V.Monitor_P_For_V):=case
+		TFL_V.Monitor_P_For_V=Ready & V1.Monitor_A_For_TFL=Monitoring:Monitored;
+		TFL_V.Monitor_P_For_V=Monitored & V1.Monitor_A_For_TFL!=Monitoring:Ready;
+		TRUE:TFL_V.Monitor_P_For_V;
+	esac;
+
+
+	next(V1.Self):=case
+		V1.driving=FALSE:Stopped;
+		TRUE:V1.Self;
+	esac;
+
+	next(V1.Control_P_For_VSA):=case
+		V1.Self=Stopped:Stopped;
+		V1.Control_P_For_VSA=Ready & VSA.Control_A_For_V1=Controlling:Controlled;
+		V1.Control_P_For_VSA=Controlled & VSA.Control_A_For_V1=Controlling:Ready;
+		V1.Control_P_For_VSA=Stopped & V1.Self=Ready:Ready;
+		TRUE:V1.Control_P_For_VSA;
+	esac;
+
+        next(V1.Monitor_P_For_CDV):=case
+		V1.Monitor_P_For_CDV=Ready & CDV.Monitor_A_For_V1=Monitoring:Monitored;
+		V1.Monitor_P_For_CDV=Monitored & CDV.Monitor_A_For_V1!=Monitoring:Ready;
+		TRUE:V1.Monitor_P_For_CDV;
+	esac;
+        next(V1.Monitor_A_For_TFL):=case
+		V1.Monitor_A_For_TFL=Ready:Monitoring;
+		V1.Self=Stopped:Stopped;  
+		V1.Monitor_A_For_TFL=Stopped & V1.Self=Ready:Ready;
+		TRUE:V1.Monitor_A_For_TFL;
+	esac;
+
+	next(V2.Self):=case
+		V2.driving=FALSE:Stopped;
+		TRUE:V2.Self;
+	esac;
+
+	next(V2.Control_P_For_VSA):=case
+		V2.Self=Stopped:Stopped;
+		V2.Control_P_For_VSA=Ready & VSA.Control_A_For_V2=Controlling:Controlled;
+		V2.Control_P_For_VSA=Controlled & VSA.Control_A_For_V2=Controlling:Ready;
+		V2.Control_P_For_VSA=Stopped & V2.Self=Ready:Ready;
+		TRUE:V2.Control_P_For_VSA;
+	esac;
+
+        next(V2.Monitor_P_For_CDV):=case
+		V2.Monitor_P_For_CDV=Ready & CDV.Monitor_A_For_V2=Monitoring:Monitored;
+		V2.Monitor_P_For_CDV=Monitored & CDV.Monitor_A_For_V2!=Monitoring:Ready;
+		TRUE:V2.Monitor_P_For_CDV;
+	esac;
+        next(V2.Monitor_A_For_TFL):=case
+		V2.Monitor_A_For_TFL=Ready:Monitoring;
+		V2.Self=Stopped:Stopped;
+		V2.Monitor_A_For_TFL=Stopped & V2.Self=Ready:Ready;
+		TRUE:V2.Monitor_A_For_TFL;
+	esac;
+
+
+        next(CDV.Self):=case
+
+		TRUE:CDV.Self;
+	esac;
+
+        next(CDV.Monitor_A_For_ENV):=case
+		CDV.Monitor_A_For_ENV=Ready:Monitoring;
+		CDV.Self=Stopped:Stopped;
+		CDV.Monitor_A_For_ENV=Stopped & CDV.Self=Ready:Ready;
+		TRUE:CDV.Monitor_A_For_ENV;
+	esac;
+        next(CDV.Monitor_A_For_V1):=case
+		CDV.Monitor_A_For_V1=Ready:Monitoring;
+		CDV.Self=Stopped:Stopped;
+		CDV.Monitor_A_For_V1=Stopped & CDV.Self=Ready:Ready;
+		TRUE:CDV.Monitor_A_For_V1;
+	esac;
+        next(CDV.Monitor_A_For_V2):=case
+		CDV.Monitor_A_For_V2=Ready:Monitoring;
+		CDV.Self=Stopped:Stopped;
+		CDV.Monitor_A_For_V2=Stopped & CDV.Self=Ready:Ready;
+		TRUE:CDV.Monitor_A_For_V2;
+	esac;
+
+      	next(CDV.Transmit_Data_A_For_STL):=case
+		CDV.Transmit_Data_A_For_STL=Ready &  CDV.Transmit_Data_A_For_ETL!=Transmitting & 
+		CDV.Transmit_Data_A_For_VSA!=Transmitting & CDV.Monitor_A_For_ENV=Monitoring & CDV.Monitor_A_For_V1=Monitoring:Transmitting;
+		CDV.Transmit_Data_A_For_STL=Transmitting & STL.Transmit_Data_P_For_CDV=Transmitted:Success;
+		CDV.Transmit_Data_A_For_STL=Success | CDV.Transmit_Data_A_For_STL=Failure:Ready;
+		CDV.Self=Stopped:Stopped;
+		CDV.Transmit_Data_A_For_STL=Stopped & CDV.Self=Ready:Ready;
+		TRUE:CDV.Transmit_Data_A_For_STL;
+	esac;
+      	next(CDV.Transmit_Data_A_For_ETL):=case
+		CDV.Transmit_Data_A_For_ETL=Ready &  CDV.Transmit_Data_A_For_STL!=Transmitting & 
+		CDV.Transmit_Data_A_For_VSA!=Transmitting & CDV.Monitor_A_For_ENV=Monitoring & CDV.Monitor_A_For_V1=Monitoring:Transmitting;
+		CDV.Transmit_Data_A_For_ETL=Transmitting & ETL.Transmit_Data_P_For_CDV=Transmitted:Success;
+		CDV.Transmit_Data_A_For_ETL=Success | CDV.Transmit_Data_A_For_ETL=Failure:Ready;
+		CDV.Self=Stopped:Stopped;
+		CDV.Transmit_Data_A_For_ETL=Stopped & CDV.Self=Ready:Ready;
+		TRUE:CDV.Transmit_Data_A_For_ETL;
+	esac;
+      	next(CDV.Transmit_Data_A_For_VSA):=case
+		CDV.Transmit_Data_A_For_VSA=Ready &  CDV.Transmit_Data_A_For_STL!=Transmitting & 
+		CDV.Transmit_Data_A_For_ETL!=Transmitting & CDV.Monitor_A_For_ENV=Monitoring & CDV.Monitor_A_For_V1=Monitoring:Transmitting;
+		CDV.Transmit_Data_A_For_VSA=Transmitting & VSA.Transmit_Data_P_For_CDV=Transmitted:Success;
+		CDV.Transmit_Data_A_For_VSA=Success | CDV.Transmit_Data_A_For_VSA=Failure:Ready;
+		CDV.Self=Stopped:Stopped;
+		CDV.Transmit_Data_A_For_VSA=Stopped & CDV.Self=Ready:Ready;
+		TRUE:CDV.Transmit_Data_A_For_VSA;
+	esac;
+
+
+	next(STL.Self):=case
+
+		TRUE:STL.Self;
+	esac;
+
+        next(STL.Control_A_For_TFL_H):=case
+		STL.Self=Stopped:Stopped;
+		STL.Control_A_For_TFL_H=Ready:Controlling;
+
+		STL.Control_A_For_TFL_H=Stopped:Ready;
+		TRUE:STL.Control_A_For_TFL_H;
+	esac;
+        next(STL.Control_A_For_TFL_V):=case
+		STL.Self=Stopped:Stopped;
+		STL.Control_A_For_TFL_V=Ready:Controlling;
+	
+		STL.Control_A_For_TFL_V=Stopped:Ready;
+		TRUE:STL.Control_A_For_TFL_V;
+	esac;
+
+      	next(STL.Transmit_Data_P_For_CDV):=case
+		STL.Transmit_Data_P_For_CDV=Ready & CDV.Transmit_Data_A_For_STL=Transmitting:Transmitted;
+		STL.Transmit_Data_P_For_CDV=Transmitted :Ready;
+		STL.Self=Stopped:Stopped;
+		STL.Transmit_Data_P_For_CDV=Stopped & STL.Self=Ready:Ready;
+		TRUE:STL.Transmit_Data_P_For_CDV;
+	esac;
+
+
+
+	next(ETL.Self):=case
+
+		TRUE:ETL.Self;
+	esac;
+
+        next(ETL.Control_A_For_TFL_H):=case
+		ETL.Self=Stopped:Stopped;
+		ETL.Control_A_For_TFL_H=Ready:Controlling;
+
+		ETL.Control_A_For_TFL_H=Stopped:Ready;
+		TRUE:ETL.Control_A_For_TFL_H;
+	esac;
+        next(ETL.Control_A_For_TFL_V):=case
+		ETL.Self=Stopped:Stopped;
+		ETL.Control_A_For_TFL_V=Ready:Controlling;
+
+		ETL.Control_A_For_TFL_V=Stopped:Ready;
+		TRUE:ETL.Control_A_For_TFL_V;
+	esac;
+
+      	next(ETL.Transmit_Data_P_For_CDV):=case
+		ETL.Transmit_Data_P_For_CDV=Ready & CDV.Transmit_Data_A_For_ETL=Transmitting:Transmitted;
+		ETL.Transmit_Data_P_For_CDV=Transmitted :Ready;
+		ETL.Self=Stopped:Stopped;
+		ETL.Transmit_Data_P_For_CDV=Stopped & ETL.Self=Ready:Ready;
+		TRUE:ETL.Transmit_Data_P_For_CDV;
+	esac;
+
+
+	next(VSA.Self):=case
+
+		TRUE:VSA.Self;
+	esac;
+
+        next(VSA.Control_A_For_V1):=case
+		VSA.Self=Stopped:Stopped;
+		VSA.Control_A_For_V1=Ready:Controlling;
+
+		VSA.Control_A_For_V1=Stopped:Ready;
+		TRUE:VSA.Control_A_For_V1;
+	esac;
+        next(VSA.Control_A_For_V2):=case
+		VSA.Self=Stopped:Stopped;
+		VSA.Control_A_For_V2=Ready:Controlling;
+
+		VSA.Control_A_For_V2=Stopped:Ready;
+		TRUE:VSA.Control_A_For_V2;
+	esac;
+
+      	next(VSA.Transmit_Data_P_For_CDV):=case
+		VSA.Transmit_Data_P_For_CDV=Ready & CDV.Transmit_Data_A_For_VSA=Transmitting:Transmitted;
+		VSA.Transmit_Data_P_For_CDV=Transmitted :Ready;
+		VSA.Self=Stopped:Stopped;
+		VSA.Transmit_Data_P_For_CDV=Stopped & VSA.Self=Ready:Ready;
+		TRUE:VSA.Transmit_Data_P_For_CDV;
+	esac;
+
+
+	next(SS106.Self):=case
+
+		TRUE:SS106.Self;
+	esac;
+
+        next(SS106.Monitor_P_For_CDV):=case
+		SS106.Monitor_P_For_CDV=Ready & CDV.Monitor_A_For_ENV=Monitoring:Monitored;
+		SS106.Monitor_P_For_CDV=Monitored & CDV.Monitor_A_For_ENV!=Monitoring:Ready;
+		TRUE:SS106.Monitor_P_For_CDV;
+	esac;
+
+
+
+
+
+    next(STL.Cycle):=case
+
+    	STL.Cycle < 2:{STL.Cycle + 1}; 
+	STL.Cycle = 2:1;
+	TRUE:STL.Cycle; 
+    esac;
+
+
+    next(TFL_H.green):=case
+
+	V1.priority=TRUE & V1.CarDi=L2R & V1.CarPos>=0 & V1.CarPos<=3:TRUE;
+	V1.priority=TRUE & V1.CarDi=R2L & ((V1.CarPos>=6 & V1.CarPos<=4) |V1.CarPos=0):TRUE;
+	STL.Cycle = 1:FALSE;
+	STL.Cycle = 2:TRUE;
+	TRUE:TFL_H.green; 
+    esac;
+    next(TFL_V.green):=case
+
+	V1.priority=TRUE & V1.CarDi=U2D & ((V1.CarPos>=11 & V1.CarPos<=13) | V1.CarPos=0):TRUE;
+	V1.priority=TRUE & V1.CarDi=D2U & ((V1.CarPos>=14 & V1.CarPos<=16) | V1.CarPos=0):TRUE;
+	STL.Cycle = 1:TRUE;
+	STL.Cycle = 2:FALSE;
+	TRUE:TFL_V.green; 
+    esac;
+
+    next(V1.breaking):=case
+	V1.CarPos=V2.CarPos & V1.CarDi=V2.CarDi:TRUE; 
+	TRUE:V1.breaking;
+    esac;
+
+    next(V1.driving):=case
+   	V1.breaking=TRUE:FALSE;					
+
+	TRUE:V1.driving;
+    esac;
+
+    next(V1.CarDi):=case
+    	V1.CarDi=L2R & V1.CarPos<=7:
+	case
+	  SS106.Conjunction[SS106.DNxtL2R[V1.CarPos]]=Connecting :{L2R,U2D,D2U};
+	  TRUE:V1.CarDi;
+	esac;
+
+    	V1.CarDi=R2L & V1.CarPos<=7:
+	case
+	  SS106.Conjunction[SS106.DNxtR2L[V1.CarPos]]=Connecting :{R2L,U2D,D2U};
+	  TRUE:V1.CarDi;
+	esac;
+
+    	V1.CarDi=U2D & V1.CarPos>=11 & V1.CarPos<=20:
+	case
+	  SS106.DNxtU2D[V1.CarPos - 10]=0:
+	  case
+	  	SS106.Conjunction[0]=Connecting :{R2L,L2R,U2D};
+	  	TRUE:V1.CarDi;
+	  esac;
+	  TRUE:V1.CarDi;
+	esac;
+
+    	V1.CarDi=D2U & V1.CarPos>=11 & V1.CarPos<=20:
+	case
+	  SS106.DNxtD2U[V1.CarPos - 10]=0:
+	  case
+	  	SS106.Conjunction[0]=Connecting :{R2L,L2R,D2U};
+	  	TRUE:V1.CarDi;
+	  esac;
+	  TRUE:V1.CarDi;
+	esac;
+	TRUE:V1.CarDi;
+    esac;
+
+    next(V1.CarPos):=case
+    	V1.driving = TRUE:
+	case
+    		V1.CarPos = 3  & V1.CarDi=L2R & TFL_H.green = FALSE:V1.CarPos;
+    		V1.CarPos = 4  & V1.CarDi=R2L & TFL_H.green = FALSE:V1.CarPos;
+    		V1.CarPos = 13 & V1.CarDi=U2D & TFL_V.green = FALSE:V1.CarPos;
+    		V1.CarPos = 14 & V1.CarDi=D2U & TFL_V.green = FALSE:V1.CarPos;
+    		V1.CarPos >=0 & V1.CarPos <=7 & V1.CarDi=L2R:{SS106.DNxtL2R[V1.CarPos],V1.CarPos};
+    		V1.CarPos >=0 & V1.CarPos <=7 & V1.CarDi=R2L:{SS106.DNxtR2L[V1.CarPos],V1.CarPos};
+    		V1.CarPos >=11 & V1.CarPos <=16 & V1.CarDi=U2D:{SS106.DNxtU2D[V1.CarPos - 10],V1.CarPos};
+    		V1.CarPos >=11 & V1.CarPos <=16 & V1.CarDi=D2U:{SS106.DNxtD2U[V1.CarPos - 10],V1.CarPos};
+    		V1.CarPos >=0 & V1.CarPos <=7 & (V1.CarDi=U2D |V1.CarDi=D2U) & TFL_H.green=TRUE:0;
+    		V1.CarPos >=11 & V1.CarPos <=16 & (V1.CarDi=L2R |V1.CarDi=R2L) & TFL_V.green=TRUE:0;
+		V1.CarPos=0:
+		case
+    			V1.CarDi=L2R:SS106.DNxtL2R[0];
+    			V1.CarDi=R2L:SS106.DNxtR2L[0];
+    			V1.CarDi=U2D:SS106.DNxtU2D[0];
+    			V1.CarDi=D2U:SS106.DNxtD2U[0];
+			TRUE:V1.CarPos;
+		esac;
+		TRUE:V1.CarPos;
+	esac;
+	TRUE:V1.CarPos;
+    esac;
+
+    next(V2.breaking):=case
+	V1.CarPos=V2.CarPos & V1.CarDi=V2.CarDi:TRUE; 
+	TRUE:V2.breaking;
+    esac;
+
+
+    next(V2.driving):=case
+    	V2.breaking=TRUE:FALSE;
+
+	TRUE:V2.driving;
+    esac;
+
+    next(V2.CarDi):=case
+    	V2.CarDi=L2R & V2.CarPos<=7:
+	case
+	  SS106.Conjunction[SS106.DNxtL2R[V2.CarPos]]=Connecting :{L2R,U2D,D2U};
+	  TRUE:V2.CarDi;
+	esac;
+
+    	V2.CarDi=R2L & V2.CarPos<=7:
+	case
+	  SS106.Conjunction[SS106.DNxtR2L[V2.CarPos]]=Connecting :{R2L,U2D,D2U};
+	  TRUE:V2.CarDi;
+	esac;
+
+    	V2.CarDi=U2D & V2.CarPos>=11 & V2.CarPos<=20:
+	case
+	  SS106.DNxtU2D[V2.CarPos - 10]=0:
+	  case
+	  	SS106.Conjunction[0]=Connecting :{R2L,L2R,U2D};
+	  	TRUE:V2.CarDi;
+	  esac;
+	  TRUE:V2.CarDi;
+	esac;
+
+    	V2.CarDi=D2U & V2.CarPos>=11 & V2.CarPos<=20:
+	case
+	  SS106.DNxtD2U[V2.CarPos - 10]=0:
+	  case
+	  	SS106.Conjunction[0]=Connecting :{R2L,L2R,D2U};
+	  	TRUE:V2.CarDi;
+	  esac;
+	  TRUE:V2.CarDi;
+	esac;
+	TRUE:V2.CarDi;
+    esac;
+
+    next(V2.CarPos):=case
+    	V1.driving = TRUE:
+	case
+    		V2.CarPos = 3  & V2.CarDi=L2R & TFL_H.green = FALSE:V2.CarPos;
+    		V2.CarPos = 4  & V2.CarDi=R2L & TFL_H.green = FALSE:V2.CarPos;
+    		V2.CarPos = 13 & V2.CarDi=U2D & TFL_V.green = FALSE:V2.CarPos;
+    		V2.CarPos = 14 & V2.CarDi=D2U & TFL_V.green = FALSE:V2.CarPos;
+    		V2.CarPos >=0 & V2.CarPos <=7 & V2.CarDi=L2R:{SS106.DNxtL2R[V2.CarPos],V2.CarPos};
+    		V2.CarPos >=0 & V2.CarPos <=7 & V2.CarDi=R2L:{SS106.DNxtR2L[V2.CarPos],V2.CarPos};
+    		V2.CarPos >=11 & V2.CarPos <=16 & V2.CarDi=U2D:{SS106.DNxtU2D[V2.CarPos - 10],V2.CarPos};
+    		V2.CarPos >=11 & V2.CarPos <=16 & V2.CarDi=D2U:{SS106.DNxtD2U[V2.CarPos - 10],V2.CarPos};
+    		V2.CarPos >=0 & V2.CarPos <=7 & (V2.CarDi=U2D |V2.CarDi=D2U) & TFL_H.green=TRUE:0;
+    		V2.CarPos >=11 & V2.CarPos <=16 & (V2.CarDi=L2R |V2.CarDi=R2L) & TFL_V.green=TRUE:0;
+		V2.CarPos=0:
+		case
+    			V2.CarDi=L2R:SS106.DNxtL2R[0];
+    			V2.CarDi=R2L:SS106.DNxtR2L[0];
+    			V2.CarDi=U2D:SS106.DNxtU2D[0];
+    			V2.CarDi=D2U:SS106.DNxtD2U[0];
+			TRUE:V2.CarPos;
+		esac;
+		TRUE:V2.CarPos;
+	esac;
+	TRUE:V2.CarPos;
+    esac;
+
+
+
+JUSTICE running
+
+
+	LTLSPEC G! (TFL_H.green=FALSE & TFL_V.green=TRUE)
+
+	LTLSPEC G (TFL_H.green=FALSE -> F(TFL_H.green=TRUE))
+
+	LTLSPEC G! (TFL_H.Control_P_For_STLCA=Controlled)
+
+	LTLSPEC G (TFL_H.Control_P_For_STLCA=Controlled -> F(TFL_H.Control_P_For_STLCA=Ready))
+
+	LTLSPEC G! (STL.Transmit_Data_P_For_CDV=Transmitted)
+
+	LTLSPEC G! (V1.CarPos=11 )
+	LTLSPEC G! (V1.CarPos=6 & V2.CarPos=16)
+	LTLSPEC G (V1.CarPos=0 -> X TFL_V.green=FALSE)
+
+	LTLSPEC G F(V1.Monitor_P_For_CDV = Monitored)
+	LTLSPEC G F(SS106.Monitor_P_For_CDV = Monitored)
+
+	LTLSPEC G F(STL.Transmit_Data_P_For_CDV = Transmitted)
+	LTLSPEC G F(ETL.Transmit_Data_P_For_CDV = Transmitted)
+	LTLSPEC G F(VSA.Transmit_Data_P_For_CDV = Transmitted)
+
+	LTLSPEC G F(V1.Control_P_For_VSA = Controlled)
+	LTLSPEC G F(V2.Control_P_For_VSA = Controlled) 
+	LTLSPEC G F(TFL_H.Control_P_For_STLCA = Controlled)
+	LTLSPEC G F(TFL_V.Control_P_For_STLCA = Controlled)
+	LTLSPEC G F(TFL_H.Control_P_For_ETLCA = Controlled)
+		LTLSPEC G F(TFL_V.Control_P_For_ETLCA = Controlled)
+
+
+
+	LTLSPEC G F(CDV.Monitor_A_For_V1 = Monitoring 
+	& F(V1.Monitor_P_For_CDV = Monitored 
+	& F(CDV.Transmit_Data_A_For_STL = Transmitting 
+	& F(STL.Transmit_Data_P_For_CDV = Transmitted  
+	& F(STL.Control_A_For_TFL_H = Controlling
+	& F(TFL_H.Control_P_For_STLCA = Controlled 
+	& F(V1.Monitor_A_For_TFL= Monitoring 
+	& F(TFL_H.Monitor_P_For_V = Monitored)
+	)))))))
+
+	LTLSPEC G  F(CDV.Monitor_A_For_V1 = Monitoring U V1.Monitor_P_For_CDV = Monitored 
+	& F(V1.Monitor_P_For_CDV = Monitored U CDV.Transmit_Data_A_For_STL = Transmitting 
+	& F(CDV.Transmit_Data_A_For_STL = Transmitting U STL.Transmit_Data_P_For_CDV = Transmitted  
+	& F(STL.Transmit_Data_P_For_CDV = Transmitted U STL.Control_A_For_TFL_H = Controlling
+	& F(STL.Control_A_For_TFL_H = Controlling U TFL_H.Control_P_For_STLCA = Controlled 
+	& F(TFL_H.Control_P_For_STLCA = Controlled U V1.Monitor_A_For_TFL= Monitoring 
+	&  F(V1.Monitor_A_For_TFL= Monitoring U TFL_H.Monitor_P_For_V = Monitored
+	& G F( CDV.Monitor_A_For_V1 = Monitoring  )))))))) 
+
+  	LTLSPEC !G F(CDV.Monitor_A_For_V1 = Monitoring 
+ 	-> F(CDV.Monitor_A_For_V1 = Monitoring U V1.Monitor_P_For_CDV = Monitored 
+   	-> F(V1.Monitor_P_For_CDV = Monitored U CDV.Transmit_Data_A_For_STL = Transmitting 
+  	-> F(CDV.Transmit_Data_A_For_STL = Transmitting U STL.Transmit_Data_P_For_CDV = Transmitted  
+  	-> F(STL.Transmit_Data_P_For_CDV = Transmitted U STL.Control_A_For_TFL_H = Controlling
+  	-> F(STL.Control_A_For_TFL_H = Controlling U TFL_H.Control_P_For_STLCA = Controlled 
+ 	-> F(TFL_H.Control_P_For_STLCA = Controlled U V1.Monitor_A_For_TFL= Monitoring 
+ 	-> F(V1.Monitor_A_For_TFL= Monitoring U TFL_H.Monitor_P_For_V = Monitored)
+ 	)))))))
+
+

@@ -1,0 +1,76 @@
+MODULE main
+
+VAR
+
+    next_state : 2..13;
+    semaphore : boolean;
+    proc1_state : {idle,entering,critical,exiting};
+    proc2_state : {idle,entering,critical,exiting};
+ASSIGN
+
+    init(next_state) := 2;
+    init(semaphore) := FALSE;
+    init(proc1_state) := idle;
+    init(proc2_state) := idle;
+
+    next(next_state) := case
+        next_state = 2 : 3;
+        next_state = 3 : 4;
+        next_state = 4 : 5;
+        next_state = 5 : 6;
+        next_state = 6 : 7;
+        next_state = 7 : 8;
+        next_state = 8 : 9;
+        next_state = 9 : 10;
+        next_state = 10 : 11;
+        next_state = 11 : 12;
+        next_state = 12 : 5;
+        TRUE : next_state;
+        esac;
+
+    next(semaphore) := case
+        next_state = 2 : FALSE;
+        next_state = 3 : FALSE;
+        next_state = 4 : FALSE;
+        next_state = 5 : FALSE;
+        next_state = 6 : FALSE;
+        next_state = 7 : FALSE;
+        next_state = 8 : TRUE;
+        next_state = 9 : TRUE;
+        next_state = 10 : TRUE;
+        next_state = 11 : TRUE;
+        next_state = 12 : FALSE;
+        TRUE:semaphore;
+        esac;
+
+    next(proc1_state) := case
+        next_state = 2 : idle;
+        next_state = 3 : idle;
+        next_state = 4 : entering;
+        next_state = 5 : entering;
+        next_state = 6 : entering;
+        next_state = 7 : entering;
+        next_state = 8 : entering;
+        next_state = 9 : entering;
+        next_state = 10 : entering;
+        next_state = 11 : entering;
+        next_state = 12 : entering;
+        TRUE:proc1_state;
+        esac;
+
+    next(proc2_state) := case
+        next_state = 2 : idle;
+        next_state = 3 : idle;
+        next_state = 4 : idle;
+        next_state = 5 : idle;
+        next_state = 6 : idle;
+        next_state = 7 : entering;
+        next_state = 8 : critical;
+        next_state = 9 : critical;
+        next_state = 10 : critical;
+        next_state = 11 : exiting;
+        next_state = 12 : idle;
+        TRUE:proc2_state;
+        esac;
+
+LTLSPEC  G (proc1_state = entering ->  F proc1_state = critical)

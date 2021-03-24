@@ -1,0 +1,4 @@
+LTLSPEC G ! (proc1.state = critical)
+LTLSPEC G ! (proc2.state = critical)
+LTLSPEC G (proc1.state = entering -> F proc1.state = critical)
+
